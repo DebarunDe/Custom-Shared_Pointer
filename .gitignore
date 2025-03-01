@@ -1,13 +1,4 @@
 # Ignore output of compilation files
-*.o
-*.obj
-*.so
-*.dll
-*.exe
-*.out
-*.a
-*.lib
-*.class
-.vscode/
-*.build/
-.build/*
+*
+!/**/
+!*.*
