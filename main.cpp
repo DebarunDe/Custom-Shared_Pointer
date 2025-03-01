@@ -5,8 +5,14 @@
 class TestObject {
 public:
     int value;
+    static bool deleted;
     TestObject(int val) : value(val) {}
+    ~TestObject() {
+        deleted = true;
+    }
 };
+
+bool TestObject::deleted = false;
 
 void testDefaultConstructor() {
     SharedPtr<TestObject> sp;
@@ -70,6 +76,14 @@ void testDestructor() {
         assert(sp1.getCount() == 2);
     }
     assert(sp1.getCount() == 1);
+
+    SharedPtr<TestObject> sp3(nullptr);
+    assert(sp3.getCount() == 0);
+    {
+        SharedPtr<TestObject> sp4(sp3);
+        assert(sp4.getCount() == 0);
+    }
+    assert(sp3.getCount() == 0);
     std::cout << "testDestructor passed!" << std::endl;
 }
 
@@ -108,6 +122,73 @@ void testStress() {
     std::cout << "testStress passed!" << std::endl;
 }
 
+void testNullptrAssignment() {
+    SharedPtr<TestObject> sp1(new TestObject(70));
+    SharedPtr<TestObject> sp2;
+    sp2 = nullptr;
+    assert(sp2.get() == nullptr);
+    assert(sp2.getCount() == 0);
+    assert(sp1.get() != nullptr);
+    assert(sp1.getCount() == 1);
+    std::cout << "testNullptrAssignment passed!" << std::endl;
+}
+
+void testSelfAssignment() {
+    SharedPtr<TestObject> sp(new TestObject(80));
+    sp = sp;
+    assert(sp.get() != nullptr);
+    assert(sp.get()->value == 80);
+    assert(sp.getCount() == 1);
+    std::cout << "testSelfAssignment passed!" << std::endl;
+}
+
+void testReset() {
+    SharedPtr<TestObject> sp(new TestObject(90));
+    sp.reset();
+    assert(sp.get() == nullptr);
+    assert(sp.getCount() == 0);
+    std::cout << "testReset passed!" << std::endl;
+}
+
+void testResetWithNewPointer() {
+    SharedPtr<TestObject> sp(new TestObject(100));
+    sp.reset(new TestObject(110));
+    assert(sp.get() != nullptr);
+    assert(sp.get()->value == 110);
+    assert(sp.getCount() == 1);
+    std::cout << "testResetWithNewPointer passed!" << std::endl;
+}
+
+void testMultipleResets() {
+    SharedPtr<TestObject> sp(new TestObject(120));
+    sp.reset(new TestObject(130));
+    sp.reset(new TestObject(140));
+    assert(sp.get() != nullptr);
+    assert(sp.get()->value == 140);
+    assert(sp.getCount() == 1);
+    std::cout << "testMultipleResets passed!" << std::endl;
+}
+
+void testCopyingIntoNullptr() {
+    SharedPtr<TestObject> sp1(new TestObject(150));
+    SharedPtr<TestObject> sp2(nullptr);
+    sp1 = sp2;
+    assert(sp1.get() == sp2.get());
+    assert(sp1.getCount() == 0);
+    assert(sp2.getCount() == 0);
+    std::cout << "testCopyingIntoNullptr passed!" << std::endl;
+}
+
+void testScopeDeletion() {
+    TestObject::deleted = false;
+    {
+        SharedPtr<TestObject> sp(new TestObject(160));
+        sp->value = 160;
+    }
+    assert(TestObject::deleted);
+    std::cout << "testScopeDeletion passed!" << std::endl;
+}
+
 int main() {
     testDefaultConstructor();
     testConstructorWithPointer();
@@ -117,6 +198,13 @@ int main() {
     testMoveAssignmentOperator();
     testDestructor();
     testStress();
+    testNullptrAssignment();
+    testSelfAssignment();
+    testReset();
+    testResetWithNewPointer();
+    testMultipleResets();
+    testCopyingIntoNullptr();
+    testScopeDeletion();
 
     std::cout << "All tests passed!" << std::endl;
     return 0;

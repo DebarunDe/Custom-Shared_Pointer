@@ -11,7 +11,11 @@ class SharedPtr {
         //default constructor
         SharedPtr() : ptr(nullptr), count(new unsigned int(0)) {}
         //constructor with pointer
-        SharedPtr(T* ptr) : ptr(ptr), count(new unsigned int(1)) {}
+        SharedPtr(T* ptr) : ptr(ptr), count(new unsigned int(1)) {
+            if (ptr == nullptr) {
+                *this->count = 0;
+            }
+        }
 
         //copy constructor
         SharedPtr(const SharedPtr & obj) {
@@ -30,10 +34,10 @@ class SharedPtr {
                 //if not pointing to a object, just copy pointer and count
                 this->ptr = obj.ptr;
                 this->count = obj.count;
-            }
-            //no matter what, increment the count
-            if (obj.ptr != nullptr) {
-                (*this->count)++;
+                
+                if (obj.ptr != nullptr) {
+                    (*this->count)++;
+                }
             }
             return *this;
         }
@@ -52,9 +56,9 @@ class SharedPtr {
                 }
                 this->ptr = obj.ptr;
                 this->count = obj.count;
+                obj.ptr = nullptr;
+                obj.count = nullptr;
             }
-            obj.ptr = nullptr;
-            obj.count = nullptr;
             return *this;
         }
 
@@ -80,18 +84,39 @@ class SharedPtr {
             cleanup();
         }
 
+        //reset
+        void reset() {
+            if (this->ptr != nullptr) {
+                cleanup();
+            }
+            this->ptr = nullptr;
+            this->count = new unsigned int(0);
+        }
+
+        //reset with new pointer
+        void reset(T* ptr) {
+            if (this->ptr != nullptr) {
+                cleanup();
+            }
+            this->ptr = ptr;
+            if (ptr != nullptr) {
+                this->count = new unsigned int(1);
+            } else {
+                this->count = new unsigned int(0);
+            }
+        }
+
         private:
             void cleanup() {
                 /* Decrement the count to current object assigned to current SharedPtr, and remove the ptr associated with it,
                 * if the count is 1, then we are the last ptr to object, so we can delete the object.
                 * if the count is 0, ptr is pointing to a nullptr, so we can just delete the count.
                 */
-               if (count && --(*this->count) == 0) {
-                    if (this->ptr != nullptr) {
+                if (count) {
+                    if (*(this->count) > 0 && --(*this->count) == 0) {
                         delete this->ptr;
+                        delete this->count;
                     }
-                    //free up memory held by SharedPtr's count
-                    delete this->count;
                 }
             }
 
