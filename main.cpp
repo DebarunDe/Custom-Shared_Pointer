@@ -73,6 +73,41 @@ void testDestructor() {
     std::cout << "testDestructor passed!" << std::endl;
 }
 
+void testStress() {
+    const int numObjects = 100000;
+    SharedPtr<TestObject> spArray[numObjects];
+
+    // Test creating a large number of SharedPtr objects
+    for (int i = 0; i < numObjects; ++i) {
+        spArray[i] = SharedPtr<TestObject>(new TestObject(i));
+    }
+
+    // Test accessing and verifying the values
+    for (int i = 0; i < numObjects; ++i) {
+        assert(spArray[i].get() != nullptr);
+        assert(spArray[i].get()->value == i);
+        assert(spArray[i].getCount() == 1);
+    }
+
+    // Test copying SharedPtr objects
+    for (int i = 0; i < numObjects; ++i) {
+        SharedPtr<TestObject> spCopy = spArray[i];
+        assert(spCopy.get() == spArray[i].get());
+        assert(spCopy.getCount() == 2);
+    }
+
+    // Test moving SharedPtr objects
+    for (int i = 0; i < numObjects; ++i) {
+        SharedPtr<TestObject> spMove = std::move(spArray[i]);
+        assert(spArray[i].get() == nullptr);
+        assert(spMove.get() != nullptr);
+        assert(spMove.get()->value == i);
+        assert(spMove.getCount() == 1);
+    }
+
+    std::cout << "testStress passed!" << std::endl;
+}
+
 int main() {
     testDefaultConstructor();
     testConstructorWithPointer();
@@ -81,6 +116,7 @@ int main() {
     testMoveConstructor();
     testMoveAssignmentOperator();
     testDestructor();
+    testStress();
 
     std::cout << "All tests passed!" << std::endl;
     return 0;
