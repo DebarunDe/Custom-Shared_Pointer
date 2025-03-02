@@ -3,26 +3,30 @@
 
 #include <mutex>
 #include <atomic>
+#include <utility>
 
 template <typename T>
 class SharedPtr {
     private:
         T* ptr;
-        //TODO: Use atomic instead of unsigned int* to make it thread safe
+        //thread safe count and access guards
         std::atomic<unsigned int>* count;
-        //unsigned int* count;
         mutable std::mutex mtx;
     public:
         //default constructor
         SharedPtr() : ptr(nullptr), count(new std::atomic<unsigned int>(0)) {}
         //constructor with pointer
         SharedPtr(T* ptr) : ptr(ptr), count(new std::atomic<unsigned int>(1)) {
+            //Check specifically if we are indirectly pointed to nullptr, in that case, treat like nullptr SharedPtr
             if (ptr == nullptr) {
                 *this->count = 0;
             }
         }
 
         //copy constructor
+        /*
+        * Check to see if we are already pointing to object, if not do assignments, making sure to check for nullptr to treat as special case
+        */
         SharedPtr(const SharedPtr & obj) {
             std::lock_guard<std::mutex> guard(obj.mtx);
             this->ptr = obj.ptr;
@@ -52,6 +56,10 @@ class SharedPtr {
         }
 
         //move constructor
+        /*
+        * Check to see if we are already pointing to object, if not do assignments, making sure to check for nullptr to treat as special case
+        * since it is a move, no need to worry about the count, it will remain the same
+        */
         SharedPtr(SharedPtr && obj) {
             std::lock_guard<std::mutex> guard(obj.mtx);
             this->ptr = obj.ptr;
@@ -127,11 +135,11 @@ class SharedPtr {
         }
 
         private:
+            /* Decrement the count to current object assigned to current SharedPtr, and remove the ptr associated with it,
+            * if the count is 1, then we are the last ptr to object, so we can delete the object.
+            * if the count is 0, ptr is pointing to a nullptr, the block should be left alone.
+            */
             void cleanup() {
-                /* Decrement the count to current object assigned to current SharedPtr, and remove the ptr associated with it,
-                * if the count is 1, then we are the last ptr to object, so we can delete the object.
-                * if the count is 0, ptr is pointing to a nullptr, the block should be left alone.
-                */
                 if (count) {
                     if (*(this->count) > 0 && --(*this->count) == 0) {
                         delete this->ptr;

@@ -124,6 +124,19 @@ void testMoveAssignmentOperator() {
     assert(sp2.get() != nullptr);
     assert(sp2.get()->value == 50);
     assert(sp2.getCount() == 1);
+
+    SharedPtr<TestObject> sp5(new TestObject(50));
+    SharedPtr<TestObject> sp6(std::move(sp5));
+    std::shared_ptr<TestObject> sp7(new TestObject(50));
+    std::shared_ptr<TestObject> sp8(std::move(sp7));
+    assert(sp7.get() == nullptr);
+    assert(sp8.get() != nullptr);
+    assert(sp8.get()->value == 50);
+    assert(sp8.use_count() == 1);
+    assert(sp5.get() == nullptr);
+    assert(sp6.get() != nullptr);
+    assert(sp6.get()->value == 50);
+    assert(sp6.getCount() == 1);
     std::cout << "testMoveAssignmentOperator passed!" << std::endl;
 }
 
